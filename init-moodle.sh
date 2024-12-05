@@ -47,14 +47,23 @@ sleep 30
 
 # Install Moodle database
 echo "Installing Moodle..."
-docker compose exec -T php php /var/www/html/admin/cli/install_database.php \
+docker compose exec -T php php /var/www/html/admin/cli/install.php \
     --agree-license \
-    --adminuser=admin \
-    --adminpass=Admin@123 \
-    --adminemail=admin@example.com \
+    --non-interactive \
+    --lang=en \
+    --wwwroot=http://10.40.0.71 \
+    --dataroot=/var/www/moodledata \
+    --dbtype=mysqli \
+    --dbhost=db \
+    --dbname=moodle \
+    --dbuser=moodleuser \
+    --dbpass=MoodlePass@123 \
     --fullname="Moodle Site" \
     --shortname="Moodle" \
-    --summary="Moodle LMS"
+    --summary="Moodle LMS" \
+    --adminuser=admin \
+    --adminpass=Admin@123 \
+    --adminemail=admin@example.com
 
 # Clear all caches
 echo "Clearing caches..."
