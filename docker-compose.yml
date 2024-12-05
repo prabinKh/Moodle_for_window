@@ -10,6 +10,7 @@ services:
     depends_on:
       - php
       - db
+    user: "www-data:www-data"
     restart: unless-stopped
 
   php:
@@ -23,6 +24,7 @@ services:
       - POST_MAX_SIZE=64M
       - MAX_EXECUTION_TIME=600
       - PHP_MAX_INPUT_VARS=5000
+    user: "www-data:www-data"
     restart: unless-stopped
 
   db:
