@@ -31,7 +31,7 @@ mkdir -p moodledata
 echo "Copying configuration file..."
 cp -f config.php moodle/
 
-# Set proper permissions
+# Set proper permissions for host files
 echo "Setting initial permissions..."
 chown -R www-data:www-data moodle moodledata
 chmod -R 755 moodle
@@ -45,9 +45,14 @@ docker compose up -d --build
 echo "Waiting for database to be ready (30 seconds)..."
 sleep 30
 
+# Fix permissions inside containers
+echo "Setting container permissions..."
+docker compose exec -T php bash -c "chown -R www-data:www-data /var/www/html /var/www/moodledata"
+docker compose exec -T nginx bash -c "chown -R www-data:www-data /var/www/html /var/www/moodledata"
+
 # Install Moodle database
 echo "Installing Moodle..."
-docker compose exec -T php bash -c "cd /var/www/html && php admin/cli/install.php \
+docker compose exec -T -u www-data php bash -c "cd /var/www/html && php admin/cli/install.php \
     --agree-license \
     --non-interactive \
     --lang=en \
@@ -65,19 +70,10 @@ docker compose exec -T php bash -c "cd /var/www/html && php admin/cli/install.ph
     --adminpass=Admin@123 \
     --adminemail=admin@example.com"
 
-# Clear all caches
-echo "Clearing caches..."
-docker compose exec -T php bash -c "cd /var/www/html && php admin/cli/purge_caches.php"
-
-# Fix permissions one last time
+# Fix permissions again
 echo "Final permission setup..."
-docker compose exec -T php chown -R www-data:www-data /var/www/html
-docker compose exec -T php chown -R www-data:www-data /var/www/moodledata
-docker compose exec -T php chmod -R 755 /var/www/html
-docker compose exec -T php chmod -R 777 /var/www/moodledata
-
-# Create installation completion flag
-docker compose exec -T php touch /var/www/moodledata/installation_completed
+docker compose exec -T php bash -c "chown -R www-data:www-data /var/www/html /var/www/moodledata"
+docker compose exec -T nginx bash -c "chown -R www-data:www-data /var/www/html /var/www/moodledata"
 
 echo
 echo "Installation complete! Please follow these steps:"
@@ -86,4 +82,7 @@ echo "2. Login with:"
 echo "   Username: admin"
 echo "   Password: Admin@123"
 echo
+
+# Restart containers to apply all changes
+docker compose restart
  
