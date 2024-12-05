@@ -42,6 +42,7 @@ RUN { \
     echo 'upload_max_filesize=64M'; \
     echo 'post_max_size=64M'; \
     echo 'max_input_vars=5000'; \
+    echo 'include_path=.:/usr/local/lib/php:/var/www/html/lib'; \
     } > /usr/local/etc/php/conf.d/custom.ini
 
 WORKDIR /var/www/html
