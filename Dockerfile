@@ -46,14 +46,12 @@ RUN { \
 
 WORKDIR /var/www/html
 
-# Download and install Moodle
-RUN git clone -b MOODLE_402_STABLE git://git.moodle.org/moodle.git .
+# Create moodledata directory
+RUN mkdir -p /var/www/moodledata
 
-# Create moodledata directory and set permissions
-RUN mkdir -p /var/www/moodledata && \
-    chown -R www-data:www-data /var/www/html /var/www/moodledata && \
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html /var/www/moodledata && \
     chmod -R 755 /var/www/html && \
     chmod -R 777 /var/www/moodledata
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html 
+USER www-data
