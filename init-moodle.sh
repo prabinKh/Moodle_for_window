@@ -11,9 +11,10 @@ fi
 
 echo "Starting Moodle installation..."
 
-# Stop any running containers
-echo "Stopping existing containers..."
+# Stop any running containers and clean up
+echo "Stopping existing containers and cleaning up..."
 docker compose down -v
+docker volume rm moodle_for_window_mysql_data moodle_for_window_moodledata 2>/dev/null || true
 
 # Clean up old directories
 echo "Cleaning up old directories..."
@@ -37,9 +38,11 @@ chown -R www-data:www-data moodle moodledata
 chmod -R 755 moodle
 chmod -R 777 moodledata
 
-# Start containers
-echo "Starting Docker containers..."
-docker compose up -d --build
+# Start database container first
+echo "Starting database container..."
+docker compose up -d db
+echo "Waiting for database to initialize..."
+sleep 20
 
 # Function to check container health
 check_container_health() {
@@ -49,8 +52,7 @@ check_container_health() {
 
     echo "Checking health of $service_name..."
     while [ $attempt -le $max_attempts ]; do
-        health_status=$(docker compose ps $service_name | grep -o "healthy")
-        if [ "$health_status" = "healthy" ]; then
+        if docker compose ps $service_name | grep -q "healthy"; then
             echo "$service_name is healthy!"
             return 0
         fi
@@ -64,17 +66,23 @@ check_container_health() {
     return 1
 }
 
-# Wait for containers to be healthy
+# Wait for database to be healthy
 check_container_health "db"
+
+# Start remaining containers
+echo "Starting remaining containers..."
+docker compose up -d
+
+# Wait for other containers to be healthy
 check_container_health "php"
 check_container_health "nginx"
 
-# Additional verification for MySQL
+# Verify MySQL connection
 echo "Verifying MySQL connection..."
 max_attempts=30
 attempt=1
 while [ $attempt -le $max_attempts ]; do
-    if docker compose exec -T db mysql -u root -pAdmin@123 -e "SELECT 1;" >/dev/null 2>&1; then
+    if docker compose exec -T db mysql -h 127.0.0.1 -u root -pAdmin@123 -e "SELECT 1;" >/dev/null 2>&1; then
         echo "MySQL connection verified!"
         break
     fi
@@ -85,6 +93,7 @@ done
 
 if [ $attempt -gt $max_attempts ]; then
     echo "Error: Could not establish MySQL connection"
+    docker compose logs db
     exit 1
 fi
 
@@ -125,6 +134,4 @@ echo "2. Login with:"
 echo "   Username: admin"
 echo "   Password: Admin@123"
 echo
-
-# No need to restart containers at the end
  
