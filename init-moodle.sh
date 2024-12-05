@@ -3,6 +3,12 @@
 # Exit on error
 set -e
 
+# Check if script is run with sudo
+if [ "$EUID" -ne 0 ]; then 
+    echo "Please run with sudo"
+    exit 1
+fi
+
 echo "Starting Moodle installation..."
 
 # Stop any running containers
@@ -15,7 +21,7 @@ rm -rf moodle moodledata
 
 # Clone Moodle repository
 echo "Cloning Moodle repository..."
-git clone -b MOODLE_402_STABLE git://git.moodle.org/moodle.git
+git clone -b MOODLE_402_STABLE https://github.com/moodle/moodle.git
 
 # Create moodledata directory
 echo "Creating moodledata directory..."
@@ -25,6 +31,12 @@ mkdir -p moodledata
 echo "Copying configuration file..."
 cp -f config.php moodle/
 
+# Set proper permissions
+echo "Setting initial permissions..."
+chown -R www-data:www-data moodle moodledata
+chmod -R 755 moodle
+chmod -R 777 moodledata
+
 # Start containers
 echo "Starting Docker containers..."
 docker compose up -d --build
@@ -33,32 +45,16 @@ docker compose up -d --build
 echo "Waiting for database to be ready (30 seconds)..."
 sleep 30
 
-# Set initial permissions
-echo "Setting initial permissions..."
-docker compose exec -T php chown -R www-data:www-data /var/www/html
-docker compose exec -T php chown -R www-data:www-data /var/www/moodledata
-docker compose exec -T php chmod -R 755 /var/www/html
-docker compose exec -T php chmod -R 777 /var/www/moodledata
-
 # Install Moodle database
 echo "Installing Moodle..."
-docker compose exec -T php php /var/www/html/admin/cli/install.php \
+docker compose exec -T php php /var/www/html/admin/cli/install_database.php \
     --agree-license \
-    --non-interactive \
-    --lang=en \
-    --wwwroot=http://10.40.0.71 \
-    --dataroot=/var/www/moodledata \
-    --dbtype=mysqli \
-    --dbhost=db \
-    --dbname=moodle \
-    --dbuser=moodleuser \
-    --dbpass=MoodlePass@123 \
-    --fullname="Moodle Site" \
-    --shortname="Moodle" \
-    --summary="Moodle LMS" \
     --adminuser=admin \
     --adminpass=Admin@123 \
-    --adminemail=admin@example.com
+    --adminemail=admin@example.com \
+    --fullname="Moodle Site" \
+    --shortname="Moodle" \
+    --summary="Moodle LMS"
 
 # Clear all caches
 echo "Clearing caches..."
