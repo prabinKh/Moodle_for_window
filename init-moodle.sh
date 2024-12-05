@@ -47,7 +47,7 @@ sleep 30
 
 # Install Moodle database
 echo "Installing Moodle..."
-docker compose exec -T php php /var/www/html/admin/cli/install.php \
+docker compose exec -T php bash -c "cd /var/www/html && php admin/cli/install.php \
     --agree-license \
     --non-interactive \
     --lang=en \
@@ -58,16 +58,16 @@ docker compose exec -T php php /var/www/html/admin/cli/install.php \
     --dbname=moodle \
     --dbuser=moodleuser \
     --dbpass=MoodlePass@123 \
-    --fullname="Moodle Site" \
-    --shortname="Moodle" \
-    --summary="Moodle LMS" \
+    --fullname='Moodle Site' \
+    --shortname='Moodle' \
+    --summary='Moodle LMS' \
     --adminuser=admin \
     --adminpass=Admin@123 \
-    --adminemail=admin@example.com
+    --adminemail=admin@example.com"
 
 # Clear all caches
 echo "Clearing caches..."
-docker compose exec -T php php /var/www/html/admin/cli/purge_caches.php
+docker compose exec -T php bash -c "cd /var/www/html && php admin/cli/purge_caches.php"
 
 # Fix permissions one last time
 echo "Final permission setup..."
