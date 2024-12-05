@@ -41,9 +41,42 @@ chmod -R 777 moodledata
 echo "Starting Docker containers..."
 docker compose up -d --build
 
-# Wait for database to be ready
-echo "Waiting for database to be ready (30 seconds)..."
-sleep 30
+# Function to check if container is ready
+wait_for_container() {
+    local container_name=$1
+    local max_attempts=30
+    local attempt=1
+    
+    echo "Waiting for $container_name to be ready..."
+    while [ $attempt -le $max_attempts ]; do
+        if docker compose ps $container_name | grep -q "Up"; then
+            echo "$container_name is ready!"
+            return 0
+        fi
+        echo "Attempt $attempt/$max_attempts: $container_name is not ready yet..."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+    
+    echo "Error: $container_name failed to start properly"
+    return 1
+}
+
+# Wait for containers to be ready
+wait_for_container "php"
+wait_for_container "db"
+wait_for_container "nginx"
+
+# Additional wait for MySQL to be fully ready
+echo "Waiting for MySQL to be fully ready..."
+for i in {1..30}; do
+    if docker compose exec -T db mysqladmin ping -h localhost -u root -pAdmin@123 --silent; then
+        echo "MySQL is ready!"
+        break
+    fi
+    echo "Waiting for MySQL... ($i/30)"
+    sleep 2
+done
 
 # Fix permissions inside containers
 echo "Setting container permissions..."
@@ -83,6 +116,5 @@ echo "   Username: admin"
 echo "   Password: Admin@123"
 echo
 
-# Restart containers to apply all changes
-docker compose restart
+# No need to restart containers at the end
  
