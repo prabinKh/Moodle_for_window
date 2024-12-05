@@ -1,27 +1,35 @@
-server {
-    listen 80;
-    server_name localhost;
-    root /var/www/html;
-    index index.php index.html index.htm;
+<?php
+unset($CFG);
+global $CFG;
+$CFG = new stdClass();
 
-    client_max_body_size 100M;
-    fastcgi_read_timeout 600;
-    
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
+$CFG->dbtype    = 'mysqli';
+$CFG->dblibrary = 'native';
+$CFG->dbhost    = 'db';
+$CFG->dbname    = 'moodle';
+$CFG->dbuser    = 'moodleuser';
+$CFG->dbpass    = 'MoodlePass@123';
+$CFG->prefix    = 'mdl_';
+$CFG->dboptions = array(
+    'dbpersist' => false,
+    'dbsocket'  => false,
+    'dbport'    => '',
+);
 
-    location ~ [^/]\.php(/|$) {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass php:9000;
-        fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_read_timeout 600;
-    }
+$CFG->wwwroot   = 'http://10.40.0.71';
+$CFG->dataroot  = '/var/www/moodledata';
+$CFG->dirroot   = '/var/www/html';
+$CFG->admin     = 'admin';
+$CFG->directorypermissions = 0777;
 
-    location ~ /\. {
-        deny all;
-    }
-} 
+// Prevent upgrade checks and maintenance mode
+$CFG->disableupdatenotifications = true;
+$CFG->disableupdateautodeploy = true;
+$CFG->maintenance_enabled = 0;
+$CFG->upgradekey = 'put_some_unique_key_here';
+
+// Debug settings
+$CFG->debug = 32767;
+$CFG->debugdisplay = 1;
+
+require_once(__DIR__ . '/lib/setup.php'); 
