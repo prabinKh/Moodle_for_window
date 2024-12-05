@@ -54,4 +54,5 @@ RUN chown -R www-data:www-data /var/www/html /var/www/moodledata && \
     chmod -R 755 /var/www/html && \
     chmod -R 777 /var/www/moodledata
 
-USER www-data
+# Keep running as root for installation
+# USER www-data  # Commented out to allow installation process
