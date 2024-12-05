@@ -41,42 +41,52 @@ chmod -R 777 moodledata
 echo "Starting Docker containers..."
 docker compose up -d --build
 
-# Function to check if container is ready
-wait_for_container() {
-    local container_name=$1
+# Function to check container health
+check_container_health() {
+    local service_name=$1
     local max_attempts=30
     local attempt=1
-    
-    echo "Waiting for $container_name to be ready..."
+
+    echo "Checking health of $service_name..."
     while [ $attempt -le $max_attempts ]; do
-        if docker compose ps $container_name | grep -q "Up"; then
-            echo "$container_name is ready!"
+        health_status=$(docker compose ps $service_name | grep -o "healthy")
+        if [ "$health_status" = "healthy" ]; then
+            echo "$service_name is healthy!"
             return 0
         fi
-        echo "Attempt $attempt/$max_attempts: $container_name is not ready yet..."
-        sleep 5
+        echo "Attempt $attempt/$max_attempts: Waiting for $service_name to be healthy..."
+        sleep 10
         attempt=$((attempt + 1))
     done
-    
-    echo "Error: $container_name failed to start properly"
+
+    echo "Error: $service_name failed to become healthy"
+    docker compose logs $service_name
     return 1
 }
 
-# Wait for containers to be ready
-wait_for_container "php"
-wait_for_container "db"
-wait_for_container "nginx"
+# Wait for containers to be healthy
+check_container_health "db"
+check_container_health "php"
+check_container_health "nginx"
 
-# Additional wait for MySQL to be fully ready
-echo "Waiting for MySQL to be fully ready..."
-for i in {1..30}; do
-    if docker compose exec -T db mysqladmin ping -h localhost -u root -pAdmin@123 --silent; then
-        echo "MySQL is ready!"
+# Additional verification for MySQL
+echo "Verifying MySQL connection..."
+max_attempts=30
+attempt=1
+while [ $attempt -le $max_attempts ]; do
+    if docker compose exec -T db mysql -u root -pAdmin@123 -e "SELECT 1;" >/dev/null 2>&1; then
+        echo "MySQL connection verified!"
         break
     fi
-    echo "Waiting for MySQL... ($i/30)"
-    sleep 2
+    echo "Attempt $attempt/$max_attempts: Waiting for MySQL connection..."
+    sleep 5
+    attempt=$((attempt + 1))
 done
+
+if [ $attempt -gt $max_attempts ]; then
+    echo "Error: Could not establish MySQL connection"
+    exit 1
+fi
 
 # Fix permissions inside containers
 echo "Setting container permissions..."
