@@ -42,7 +42,7 @@ RUN { \
     echo 'upload_max_filesize=64M'; \
     echo 'post_max_size=64M'; \
     echo 'max_input_vars=5000'; \
-    echo 'include_path=.:/usr/local/lib/php:/var/www/html/lib'; \
+    echo 'include_path=.:/usr/local/lib/php:/var/www/html:/var/www/html/lib'; \
     } > /usr/local/etc/php/conf.d/custom.ini
 
 WORKDIR /var/www/html
@@ -55,5 +55,4 @@ RUN chown -R www-data:www-data /var/www/html /var/www/moodledata && \
     chmod -R 755 /var/www/html && \
     chmod -R 777 /var/www/moodledata
 
-# Keep running as root for installation
-# USER www-data  # Commented out to allow installation process
+# Keep running as root for initial setup
